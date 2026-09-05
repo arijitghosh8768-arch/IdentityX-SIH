@@ -1,0 +1,17 @@
+# Environments
+backend/venv/
+backend/__pycache__/
+backend/.pytest_cache/
+.env
+
+# Database
+backend/*.db
+backend/*.sqlite3
+
+# Node modules
+frontend/node_modules/
+frontend/dist/
+
+# OS Files
+.DS_Store
+Thumbs.db
