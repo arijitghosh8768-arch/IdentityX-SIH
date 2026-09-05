@@ -1,19 +1,35 @@
 from datetime import datetime
 
-def validate_document(extracted_fields: dict, mrz_consistency: dict) -> dict:
+REQUIRED_FIELDS = {
+    "passport": ["name", "passport_number", "dob", "expiry"],
+    "visa": ["name", "visa_number", "visa_type", "entry_validation", "stay_duration"],
+    "national_id": ["name", "id_number", "dob"],
+    "driving_license": ["name", "license_number", "dob", "expiry"],
+    "permit": ["name", "permit_number", "permit_type", "expiry"],
+}
+
+
+def validate_document(
+    extracted_fields: dict,
+    mrz_consistency: dict,
+    document_type: str = "passport"
+) -> dict:
     """
     Applies business rules to validate the document.
     """
     checks = {
         "required_fields_present": False,
         "expiry_valid": False,
-        "mrz_consistent": mrz_consistency.get("consistent", False)
+        "mrz_consistent": (
+            mrz_consistency.get("consistent", False)
+            if mrz_consistency.get("status") != "NOT_APPLICABLE" else True
+        )
     }
     
     warnings = []
     
     # 1. Check required fields
-    required = ["name", "passport_number", "dob", "expiry"]
+    required = REQUIRED_FIELDS.get(document_type, REQUIRED_FIELDS["passport"])
     missing = [field for field in required if not extracted_fields.get(field)]
     if not missing:
         checks["required_fields_present"] = True
@@ -37,7 +53,8 @@ def validate_document(extracted_fields: dict, mrz_consistency: dict) -> dict:
     is_valid = all(checks.values())
     
     status = "VALID"
-    if not checks["expiry_valid"] or not checks["mrz_consistent"]:
+    expiry_required = "expiry" in required
+    if (expiry_required and not checks["expiry_valid"]) or not checks["mrz_consistent"]:
         status = "SUSPICIOUS"
     elif not checks["required_fields_present"]:
         status = "INCOMPLETE"

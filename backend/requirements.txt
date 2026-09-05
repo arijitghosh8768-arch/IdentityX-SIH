@@ -8,3 +8,5 @@ sqlalchemy
 psycopg2-binary
 pydantic
 python-dotenv
+tf-keras
+PyMuPDF
