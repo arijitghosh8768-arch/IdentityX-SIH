@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
@@ -20,6 +20,17 @@ engine = create_engine(
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
+
+
+def ensure_sqlite_schema():
+    """Add new SQLite columns to an existing local database without deleting data."""
+    if "sqlite" not in SQLALCHEMY_DATABASE_URL:
+        return
+
+    columns = {column["name"] for column in inspect(engine).get_columns("documents")}
+    if "extracted_fields" not in columns:
+        with engine.begin() as connection:
+            connection.execute(text("ALTER TABLE documents ADD COLUMN extracted_fields TEXT"))
 
 def get_db():
     db = SessionLocal()

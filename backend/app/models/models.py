@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey, DateTime, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
@@ -18,6 +18,7 @@ class Document(Base):
     id = Column(Integer, primary_key=True, index=True)
     document_type = Column(String, default="passport")
     document_hash = Column(String, unique=True, index=True) # SHA-256 of the image
+    extracted_fields = Column(Text)
     uploaded_at = Column(DateTime(timezone=True), server_default=func.now())
     
     reports = relationship("VerificationReport", back_populates="document")
