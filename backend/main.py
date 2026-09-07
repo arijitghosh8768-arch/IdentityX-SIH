@@ -227,3 +227,23 @@ async def analyze_document(
         db.close()
     
     return result_data
+
+
+@app.get('/api/stats')
+def get_stats():
+    db = SessionLocal()
+    try:
+        total_scans = db.query(models.Document).count()
+        tampered = db.query(models.VerificationReport).filter(models.VerificationReport.tampering_detected == True).count()
+        
+        # Calculate average risk
+        reports = db.query(models.VerificationReport.risk_score).all()
+        avg_risk = sum(r[0] for r in reports) / len(reports) if reports else 0
+        
+        return {
+            'total_scanned': total_scans,
+            'tampered_flags': tampered,
+            'average_risk': round(avg_risk)
+        }
+    finally:
+        db.close()

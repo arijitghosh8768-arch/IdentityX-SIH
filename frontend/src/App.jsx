@@ -338,6 +338,12 @@ function App() {
                 <option value="national_id">National ID</option>
                 <option value="driving_license">Driving licence</option>
                 <option value="permit">Permit</option>
+                <option value="aadhaar">Aadhaar Card</option>
+                <option value="pan_card">PAN Card</option>
+                <option value="college_id">College ID</option>
+                <option value="marksheet">Marksheet / Degree</option>
+                <option value="voter_id">Voter ID</option>
+                <option value="other">Other / Generic</option>
               </select>
             </div>
 

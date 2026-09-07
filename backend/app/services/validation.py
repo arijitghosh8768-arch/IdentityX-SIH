@@ -6,6 +6,12 @@ REQUIRED_FIELDS = {
     "national_id": ["name", "id_number", "dob"],
     "driving_license": ["name", "license_number", "dob", "expiry"],
     "permit": ["name", "permit_number", "permit_type", "expiry"],
+    "aadhaar": ["name", "aadhaar_number", "dob"],
+    "pan_card": ["name", "pan_number", "dob"],
+    "college_id": ["name", "roll_number"],
+    "marksheet": ["name"],
+    "voter_id": ["name", "voter_id_number"],
+    "other": [],
 }
 
 

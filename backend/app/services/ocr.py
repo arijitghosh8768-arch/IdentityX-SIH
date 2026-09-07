@@ -14,6 +14,12 @@ DOCUMENT_FIELDS = {
     "national_id": ["name", "id_number", "nationality", "dob", "expiry", "sex"],
     "driving_license": ["name", "license_number", "dob", "expiry", "issue_date", "class"],
     "permit": ["name", "permit_number", "permit_type", "issue_date", "expiry"],
+    "aadhaar": ["name", "aadhaar_number", "dob", "gender"],
+    "pan_card": ["name", "pan_number", "father_name", "dob"],
+    "college_id": ["name", "roll_number", "course", "dob"],
+    "marksheet": ["name", "roll_number", "passing_year", "percentage"],
+    "voter_id": ["name", "voter_id_number", "dob", "father_name"],
+    "other": ["name", "dob"],
 }
 
 
@@ -130,6 +136,10 @@ def parse_document_text(text_lines: list, document_type: str) -> dict:
         "visa": ("visa_number", r"\b[A-Z]{0,2}\d{6,12}\b"),
         "driving_license": ("license_number", r"\b[A-Z]{1,4}[- ]?\d{4,16}\b"),
         "permit": ("permit_number", r"\b[A-Z]{0,4}[- ]?\d{5,16}\b"),
+        "aadhaar": ("aadhaar_number", r"(?<!\d)(?:\d[ -]*){12}(?!\d)"),
+        "pan_card": ("pan_number", r"\b[A-Z]{5}[0-9]{4}[A-Z]{1}\b"),
+        "college_id": ("roll_number", r"\b(?:ROLL|ID|NO)[:\s]*([A-Z0-9-]{4,15})\b"),
+        "voter_id": ("voter_id_number", r"\b[A-Z]{3}[0-9]{7}\b"),
     }
     if document_type in number_patterns and not data.get(number_patterns[document_type][0]):
         field, pattern = number_patterns[document_type]
