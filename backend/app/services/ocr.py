@@ -4,9 +4,13 @@ import easyocr
 import re
 
 from app.services.mrz import parse_mrz, verify_mrz_consistency
+from app.core.config import get_settings
+from app.core.logging_config import get_logger
+
+logger = get_logger("ocr")
+settings = get_settings()
 
 reader = None
-
 
 DOCUMENT_FIELDS = {
     "passport": ["name", "passport_number", "nationality", "dob", "expiry", "sex"],
@@ -16,29 +20,58 @@ DOCUMENT_FIELDS = {
     "permit": ["name", "permit_number", "permit_type", "issue_date", "expiry"],
 }
 
+def preprocess_image_for_ocr(img: np.ndarray) -> np.ndarray:
+    """Applies preprocessing to improve OCR accuracy."""
+    try:
+        # 1. Convert to grayscale
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        
+        # 2. Increase contrast (CLAHE)
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        contrast_enhanced = clahe.apply(gray)
+        
+        # 3. Denoising
+        denoised = cv2.fastNlMeansDenoising(contrast_enhanced, h=30)
+        
+        # We'll return the denoised grayscale image for OCR
+        return denoised
+    except Exception as e:
+        logger.warning(f"Image preprocessing failed, falling back to original: {e}")
+        return img
 
 def process_document_ocr(image_bytes: bytes, document_type: str = "passport") -> dict:
     global reader
 
     if reader is None:
-        reader = easyocr.Reader(['en'], gpu=False)
+        logger.info(f"Initializing EasyOCR (GPU={settings.OCR_GPU}, Langs={settings.OCR_LANGUAGES})")
+        langs = settings.OCR_LANGUAGES.split(",")
+        reader = easyocr.Reader(langs, gpu=settings.OCR_GPU)
 
     nparr = np.frombuffer(image_bytes, np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
     if img is None:
         return {"error": "Could not decode image."}
+        
+    # Apply Preprocessing
+    processed_img = preprocess_image_for_ocr(img)
 
-    # OCR
-    results = reader.readtext(img, detail=0)
+    # OCR (detail=1 gets bounding box and confidence score)
+    raw_results = reader.readtext(processed_img, detail=1)
+    
+    # Filter by confidence > 0.3 to remove noise
+    filtered_results = [res for res in raw_results if res[2] > 0.3]
+    
+    # Extract just the text for parsing logic
+    text_lines = [res[1] for res in filtered_results]
 
     document_type = document_type if document_type in DOCUMENT_FIELDS else "passport"
-    parsed_data = parse_document_text(results, document_type)
+    parsed_data = parse_document_text(text_lines, document_type)
 
     # MRZ lines
     mrz_lines = [
         line.strip().upper()
-        for line in results
+        for line in text_lines
         if '<' in line and len(line.replace(" ", "")) > 20
     ]
 
@@ -47,18 +80,9 @@ def process_document_ocr(image_bytes: bytes, document_type: str = "passport") ->
     # Prefer MRZ values when available
     if mrz_data.get("status") == "success":
         for field in [
-            "passport_number",
-            "visa_number",
-            "id_number",
-            "license_number",
-            "permit_number",
-            "dob",
-            "expiry",
-            "nationality",
-            "sex",
-            "surname",
-            "given_names",
-            "name"
+            "passport_number", "visa_number", "id_number", "license_number",
+            "permit_number", "dob", "expiry", "nationality", "sex",
+            "surname", "given_names", "name"
         ]:
             if field in parsed_data and mrz_data.get(field):
                 parsed_data[field] = mrz_data[field]
@@ -71,12 +95,12 @@ def process_document_ocr(image_bytes: bytes, document_type: str = "passport") ->
     )
 
     return {
-        "raw_text_segments": results,
+        "raw_text_segments": text_lines,
         "extracted_fields": parsed_data,
         "mrz_lines": mrz_lines,
         "mrz": mrz_data,
         "verification": verification,
-        "status": "success" if results else "failed"
+        "status": "success" if text_lines else "failed"
     }
 
 

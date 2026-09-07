@@ -1,16 +1,25 @@
 # Environments
-backend/venv/
-backend/__pycache__/
-backend/.pytest_cache/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
 .env
+.env.example
 
 # Database
-backend/*.db
-backend/*.sqlite3
+*.db
+*.sqlite3
 
 # Node modules
-frontend/node_modules/
-frontend/dist/
+node_modules/
+dist/
+build/
+coverage/
+
+# Blockchain
+artifacts/
+cache/
+typechain-types/
 
 # OS Files
 .DS_Store
